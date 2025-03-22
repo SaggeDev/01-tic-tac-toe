@@ -1,88 +1,49 @@
+//* Importes
 import './App.css'
 import { React } from 'react'
 import { useState } from 'react'
+import { Square } from './components/Square'
+import confetti from 'canvas-confetti'
+import {TURNS,WINNER_COMBOS} from './constants'
+import {checkEndGame, checkWinner} from './logic/boardCheck'
+import { WinnerModal } from './components/WinnerModal'
 
-const TURNS = {
-  X: 'x',
-  O: 'o'
-}
-
-const Square = ({ children, updateBoard, index, isSelected }) => {//Esto es un componente
-  const className = `square ${isSelected ? 'is-selected' : ''}`
-
-  const hadleClick = () => {
-    updateBoard(index)
-
-  }
-  return (
-    <div className={className} onClick={hadleClick}>
-      {children}
-    </div>
-  )
-
-}
-const WINNER_COMBOS = [
-  [0, 1, 2], // Top row
-  [3, 4, 5], // Middle row
-  [6, 7, 8], // Bottom row
-  [0, 3, 6], // Left column
-  [1, 4, 7], // Middle column
-  [2, 5, 8], // Right column
-  [0, 4, 8], // Diagonal top-left to bottom-right
-  [2, 4, 6]  // Diagonal top-right to bottom-left
-]
-
+//* Función principal
 function App() {
-  const [board, setBoard] = useState(Array(9).fill(null))
-  const [turn, setTurn] = useState(TURNS.X)
+  //^ Estados
+  const [board, setBoard] = useState(Array(9).fill(null)) //Casillas vacias
+  const [turn, setTurn] = useState(Math.random()>0.5?(TURNS.X):(TURNS.O))              //Empieza en X siempre
+  const [winner, setWinner] = useState(null)            //Si no hay ganador, se mantendrá en null. Si lo hay, el tipo(O/X). Si es empate, false
 
-  const [winner, setWinner] = useState(null)//Si no hay ganador, null
-
-  const checkWinner = (board_to_check) => {
-    for (const combo of WINNER_COMBOS) {
-      const [a, b, c] = combo
-      console.log(combo)
-      if(board_to_check[a]
-        &&board_to_check[a]===board_to_check[b]
-        &&board_to_check[b]===board_to_check[c]
-      ){
-        console.log(board_to_check[b])
-        return board_to_check[a]
-      }
-    }
-    return null
-
-  }
-  const resetGame=()=>{
+  //^ Función -> para resetear los estados
+  const resetGame = () => {
     setBoard(Array(9).fill(null))
-    setTurn(TURNS.X)
+    setTurn(Math.random()>0.5?(TURNS.X):(TURNS.O))
     setWinner(null)
   }
-  const checkEndGame=(newBoard)=>{
-    return newBoard.every((cell)=>cell!==null)
-  }
+
+  //^ Función -> para resetear los estados
   const updateBoard = (index) => {
-    //Si ya tiene algo que no es null, vuelve pa casa
-    if (board[index]||winner) return
-    const newBoard = [...board]//No se debe de cambiar el original porque react compara con la funcion set si hay que re-renderizar el componente
+    if (board[index] || winner) return                            //Si la casilla ya está llena o hay un ganador, no hagas nada
+    const newBoard = [...board]                                  //Atualizar el estado del tablero
     //? Rest Operator: Agarra items y los mete en un array
     //? Spread Operator: Agarra los items de un array y los suelta
     newBoard[index] = turn
     setBoard(newBoard)
-
+    //Actualizar el turno con una ternaria
     const newTurn = turn === TURNS.X ? TURNS.O : TURNS.X
     setTurn(newTurn)
-    
-    const newWinner=checkWinner(newBoard)
-    if(newWinner){
-      //Dado a que aa actualización de los estados en react es asíncrona, usamos el nuevo valor para no cometer errores de desarrollo
-      setWinner(newWinner)
-    } else if (checkEndGame(newBoard)) {
+
+    const newWinner = checkWinner(newBoard)          //Saca el ganador
+    if (newWinner) {                                //Si hay gandor, actualiza
+      //Dado a que la actualización de los estados en react es asíncrona, usamos el nuevo valor para no cometer errores de desarrollo
+      setWinner(newWinner)           
+      confetti()             
+    } else if (checkEndGame(newBoard)) {         //Si no lo hay, comprueba si hay empate
       setWinner(false)
     }
-    
-
   }
+
   return (
     <main className='board'>
       <button onClick={resetGame}>Reset</button>
@@ -103,33 +64,11 @@ function App() {
         }
       </section>
       <section className='turn'>
-        <Square isSelected={turn === TURNS.X}>{TURNS.X}</Square>
+        <Square isSelected={turn === TURNS.X}>{TURNS.X}</Square> {/*Si es true, se manda el estilo */}
         <Square isSelected={turn === TURNS.O}>{TURNS.O}</Square>
       </section>
-      {
-        winner!==null&&(//TODO: Know what this is
-          <section className='winner'>
-            <div className='text'>
-              <h2>
-                {
-                  winner===false
-                  ?'Empate'
-                  :'Ganó: '
-                }
-              </h2>
-              <header className='win'>
-                {winner&&<Square>{winner}</Square>}
-              </header>
-              <footer>
-                <button onClick={resetGame}>Empezar de nuevo</button>
-              </footer>
-            </div>
-
-          </section>
-        )
-
-        }
-      
+      {/*//^Función corta para mostrar un catel si hay ganador*/}
+      <WinnerModal winner={winner} resetGame={resetGame}/>
     </main>
   )
 }
