@@ -7,6 +7,7 @@ export const checkWinner = (board_to_check) => {            //Le pasamos todo el
             && board_to_check[a] === board_to_check[b]
             && board_to_check[b] === board_to_check[c]
         ) {
+            
             return board_to_check[a]                //Devuelveme el dueño 
         }
     }

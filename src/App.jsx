@@ -4,25 +4,33 @@ import { React } from 'react'
 import { useState } from 'react'
 import { Square } from './components/Square'
 import confetti from 'canvas-confetti'
-import {TURNS,WINNER_COMBOS} from './constants'
-import {checkEndGame, checkWinner} from './logic/boardCheck'
+import { TURNS, WINNER_COMBOS } from './constants'
+import { checkEndGame, checkWinner } from './logic/boardCheck'
 import { WinnerModal } from './components/WinnerModal'
 
 //* Función principal
 function App() {
-  //^ Estados
-  const [board, setBoard] = useState(Array(9).fill(null)) //Casillas vacias
-  const [turn, setTurn] = useState(Math.random()>0.5?(TURNS.X):(TURNS.O))              //Empieza en X siempre
+  //~ Estados
+  const [board, setBoard] = useState(() => {
+    const boardFromStorage = window.localStorage.getItem('board')
+    return boardFromStorage ? JSON.parse(boardFromStorage) : Array(9).fill(null)
+  })
+  const [turn, setTurn] = useState(()=>{
+    const trunFromLocalStorage=window.localStorage.getItem('turn')
+    return trunFromLocalStorage? JSON.parse(trunFromLocalStorage): Math.random() > 0.5 ? (TURNS.X) : (TURNS.O)
+  })              //Empieza en X siempre
   const [winner, setWinner] = useState(null)            //Si no hay ganador, se mantendrá en null. Si lo hay, el tipo(O/X). Si es empate, false
 
-  //^ Función -> para resetear los estados
+  //~ Función -> para resetear los estados
   const resetGame = () => {
     setBoard(Array(9).fill(null))
-    setTurn(Math.random()>0.5?(TURNS.X):(TURNS.O))
+    setTurn(Math.random() > 0.5 ? (TURNS.X) : (TURNS.O))
     setWinner(null)
+    window.localStorage.removeItem('board')
+    window.localStorage.removeItem('turn')
   }
 
-  //^ Función -> para resetear los estados
+  //~ Función -> para resetear los estados
   const updateBoard = (index) => {
     if (board[index] || winner) return                            //Si la casilla ya está llena o hay un ganador, no hagas nada
     const newBoard = [...board]                                  //Atualizar el estado del tablero
@@ -35,12 +43,19 @@ function App() {
     setTurn(newTurn)
 
     const newWinner = checkWinner(newBoard)          //Saca el ganador
+    //Guardar la partida
+    window.localStorage.setItem('board', JSON.stringify(newBoard))//Lo guardamos como json como string para poder revertirlo luego
+    window.localStorage.setItem('turn', JSON.stringify(newTurn))
     if (newWinner) {                                //Si hay gandor, actualiza
       //Dado a que la actualización de los estados en react es asíncrona, usamos el nuevo valor para no cometer errores de desarrollo
-      setWinner(newWinner)           
-      confetti()             
+      setWinner(newWinner,)
+      window.localStorage.removeItem('board')
+      window.localStorage.removeItem('turn')
+      confetti()
     } else if (checkEndGame(newBoard)) {         //Si no lo hay, comprueba si hay empate
       setWinner(false)
+      window.localStorage.removeItem('board')
+      window.localStorage.removeItem('turn')
     }
   }
 
@@ -67,8 +82,8 @@ function App() {
         <Square isSelected={turn === TURNS.X}>{TURNS.X}</Square> {/*Si es true, se manda el estilo */}
         <Square isSelected={turn === TURNS.O}>{TURNS.O}</Square>
       </section>
-      {/*//^Función corta para mostrar un catel si hay ganador*/}
-      <WinnerModal winner={winner} resetGame={resetGame}/>
+      {/*//~Función corta para mostrar un catel si hay ganador*/}
+      <WinnerModal winner={winner} resetGame={resetGame} />
     </main>
   )
 }
